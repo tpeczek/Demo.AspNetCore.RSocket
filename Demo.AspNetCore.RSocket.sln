@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29209.152
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Demo.AspNetCore.RSocket", "Demo.AspNetCore.RSocket\Demo.AspNetCore.RSocket.csproj", "{8A1E0A8A-8325-4484-BB08-A0C92864D79A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8A1E0A8A-8325-4484-BB08-A0C92864D79A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8A1E0A8A-8325-4484-BB08-A0C92864D79A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8A1E0A8A-8325-4484-BB08-A0C92864D79A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8A1E0A8A-8325-4484-BB08-A0C92864D79A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B4B7EA1C-2339-45C3-A212-9D714635532B}
+	EndGlobalSection
+EndGlobal
