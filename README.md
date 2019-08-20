@@ -2,7 +2,7 @@
 
 POC application trying to run RSocket server on top of ASP.NET Core primitives for non-HTTP servers. You can read more here:
 
-- []()
+- [Trying to Run RSocket Server with RSocket.NET and ASP.NET Core Primitives for Non-HTTP Servers](https://www.tpeczek.com/2019/08/trying-to-run-rsocket-server-with.html)
 
 ## Donating
 
