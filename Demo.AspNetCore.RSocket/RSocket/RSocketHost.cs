@@ -2,18 +2,21 @@
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Connections;
 using RSocket;
 using Demo.AspNetCore.RSocket.RSocket.Internals;
 using Demo.AspNetCore.RSocket.RSocket.Transports;
+using System.Collections.Generic;
 
 namespace Demo.AspNetCore.RSocket.RSocket
 {
     internal class RSocketHost : BackgroundService
     {
         private readonly IConnectionListenerFactory _connectionListenerFactory;
+        private readonly ConcurrentDictionary<string, (ConnectionContext Context, Task ExecutionTask)> _connections = new ConcurrentDictionary<string, (ConnectionContext, Task)>();
         private readonly ILogger<RSocketHost> _logger;
 
         private IConnectionListener _connectionListener;
@@ -30,17 +33,26 @@ namespace Demo.AspNetCore.RSocket.RSocket
 
             while (true)
             {
-                ConnectionContext connection = await _connectionListener.AcceptAsync(stoppingToken);
+                ConnectionContext connectionContext = await _connectionListener.AcceptAsync(stoppingToken);
 
                 // AcceptAsync will return null upon disposing the listener
-                if (connection == null)
+                if (connectionContext == null)
                 {
                     break;
                 }
 
-                // In an actual server, ensure all accepted connections are disposed prior to completing
-                _ = Accept(connection);
+                _connections[connectionContext.ConnectionId] = (connectionContext, Accept(connectionContext));
             }
+
+            List<Task> connectionsExecutionTasks = new List<Task>(_connections.Count);
+
+            foreach (var connection in _connections)
+            {
+                connectionsExecutionTasks.Add(connection.Value.ExecutionTask);
+                connection.Value.Context.Abort();
+            }
+
+            await Task.WhenAll(connectionsExecutionTasks);
         }
 
         public override async Task StopAsync(CancellationToken cancellationToken)
@@ -48,28 +60,36 @@ namespace Demo.AspNetCore.RSocket.RSocket
             await _connectionListener.DisposeAsync();
         }
 
-        private async Task Accept(ConnectionContext connection)
+        private async Task Accept(ConnectionContext connectionContext)
         {
             try
             {
-                IRSocketTransport rsocketTransport = new ConnectionListenerTransport(connection);
+                await Task.Yield();
+
+                IRSocketTransport rsocketTransport = new ConnectionListenerTransport(connectionContext);
 
                 RSocketServer rsocketServer = new EchoServer(rsocketTransport);
                 await rsocketServer.ConnectAsync();
 
-                _logger.LogInformation("Connection {ConnectionId} connected", connection.ConnectionId);
+                _logger.LogInformation("Connection {ConnectionId} connected", connectionContext.ConnectionId);
 
-                await connection.ConnectionClosed.WaitAsync();
+                await connectionContext.ConnectionClosed.WaitAsync();
             }
+            catch (ConnectionResetException)
+            { }
+            catch (ConnectionAbortedException)
+            { }
             catch (Exception e)
             {
-                _logger.LogError(e, "Connection {ConnectionId} threw an exception", connection.ConnectionId);
+                _logger.LogError(e, "Connection {ConnectionId} threw an exception", connectionContext.ConnectionId);
             }
             finally
             {
-                await connection.DisposeAsync();
+                await connectionContext.DisposeAsync();
 
-                _logger.LogInformation("Connection {ConnectionId} disconnected", connection.ConnectionId);
+                _connections.TryRemove(connectionContext.ConnectionId, out _);
+
+                _logger.LogInformation("Connection {ConnectionId} disconnected", connectionContext.ConnectionId);
             }
         }
     }
